@@ -1,1 +1,8 @@
+Please make sure that following dependencies are met:
+* svn
+* libtool
+* patch
+* libxml-devel
+* pcre
+
 Please run the scripts from 'scrips' directory from this path, so paths to binaries work as expected.
