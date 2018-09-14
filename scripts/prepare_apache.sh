@@ -14,7 +14,6 @@ if [ ! -d $STATIC_PATH ]; then
     exit 1
 fi
 
-TMP_DIR="./tmp"
 
 if [ -d $TMP_DIR ]; then
     echo "${TMP_DIR} is not supposed do exist"
