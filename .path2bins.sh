@@ -6,7 +6,7 @@ PATCH_PATH=`find -name apatching_apache_for_AFL_fuzzing.diff`
 PATCH_PATH=`realpath ${PATCH_PATH}`
 PATCH_PATH2=`find -name patch2.diff`
 PATCH_PATH2=`realpath ${PATCH_PATH2}`
-
+AFL_HTTP_DIR="~/afl-http"
 
 for VAR in $AFL_GCC $PATCH_PATH $PATCH_PATH2; do
     if [ ! -f "${VAR}" ]; then

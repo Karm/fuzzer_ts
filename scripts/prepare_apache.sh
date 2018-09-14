@@ -15,7 +15,6 @@ if [ ! -d $STATIC_PATH ]; then
 fi
 
 TMP_DIR="./tmp"
-AFL_HTTP_DIR="/root/afl-http"
 
 if [ -d $TMP_DIR ]; then
     echo "${TMP_DIR} is not supposed do exist"
@@ -41,6 +40,7 @@ svn co http://svn.apache.org/repos/asf/apr/apr/trunk srclib/apr
 svn co http://svn.apache.org/repos/asf/apr/apr-util/trunk srclib/apr-util
 
 patch -p0 -i ${PATCH_PATH}
+patch -p0 -i ${PATCH_PATH2}
 
 ./buildconf
 
@@ -51,9 +51,9 @@ make install
 
 popd
 
-# zip -r afl.zip afl*
+zip -r afl-http.zip ${AFL_HTTP_DIR}
 
-# cp afl.zip ${STATIC_PATH}
+cp afl-http.zip ${STATIC_PATH}
 
 # rm -f afl.zip
 # rm -rf afl*
