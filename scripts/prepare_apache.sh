@@ -43,7 +43,13 @@ patch -p0 -i ${PATCH_PATH2}
 
 ./buildconf
 
-CC=${CC} CPP=${CPP} ./configure --prefix=${AFL_HTTP_DIR} --with-libxml2
+# pushd srclib/apr
+# touch libtoolT
+# CC=${CC} ./configure --prefix=${AFL_HTTP_DIR} --with-libxml2
+# popd
+
+CC=${CC} CXX=${CPP} ./configure --prefix=${AFL_HTTP_DIR} --with-libxml2
+#CC=${CC} ./configure --prefix=${AFL_HTTP_DIR} --with-libxml2
 make
 make install
 
