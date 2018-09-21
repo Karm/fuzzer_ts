@@ -1,33 +1,8 @@
-Index: include/http_main.h
-===================================================================
---- include/http_main.h	(revision 1840965)
-+++ include/http_main.h	(working copy)
-@@ -33,7 +33,7 @@
-  * in apr_getopt() format.  Use this for default'ing args that the MPM
-  * can safely ignore and pass on from its rewrite_args() handler.
-  */
--#define AP_SERVER_BASEARGS "C:c:D:d:E:e:f:vVlLtTSMh?X"
-+#define AP_SERVER_BASEARGS "C:c:D:d:E:e:f:F:vVlLtTSMh?X"
- 
- #ifdef __cplusplus
- extern "C" {
 Index: server/main.c
 ===================================================================
 --- server/main.c	(revision 1840965)
 +++ server/main.c	(working copy)
-@@ -397,7 +397,11 @@
-     ap_log_error(APLOG_MARK, APLOG_STARTUP, 0, NULL,
-                  "  -c \"directive\"     : process directive after reading "
-                  "config files");
-+    ap_log_error(APLOG_MARK, APLOG_STARTUP, 0, NULL,
-+                 "  -F                   : hackish file to read as request  "
-+                 "");
- 
-+
- #ifdef NETWARE
-     ap_log_error(APLOG_MARK, APLOG_STARTUP, 0, NULL,
-                  "  -n name            : set screen name");
-@@ -463,8 +467,211 @@
+@@ -463,8 +463,151 @@
      destroy_and_exit_process(process, 1);
  }
  
@@ -96,51 +71,27 @@ Index: server/main.c
 +
 +static void GETDATA(char *buf2)
 +{
-+  
-+  //  int fd = open("/tmp/report", O_CREAT | O_APPEND | O_WRONLY, S_IWUSR | S_IRUSR);
-+  /* dprintf(fd, "**************************************\n"); */
-+  /* dprintf(fd, "NEW RUN\n"); */
-+  /* dprintf(fd, "**************************************\n"); */
-+  /* dprintf(fd, "before sleep\n"); */
-+  /* usleep(100); */
-+  /* dprintf(fd, "after sleep\n"); */
-+
-+
-+    /* if (buf == NULL){ */
-+    /*   //      dprintf(fd, "[-] buf is NULL\n"); */
-+    /*     perror("buf"); */
-+    /* } */
-+    /* for(int i = 0; i < 10; i++) */
-+    /*   { */
-+    /* 	sleep(1); */
-+    /* 	printf("%d\n", i); */
-+    /*   } */
 +    usleep(1000000);
-+    /* long fsize = strlen(buf); */
-+    /* for (;;) { */
++
 +    int BUFSIZE=1024*1024;
 +    usleep(10000);
-+    char buf[BUFSIZE+1];
++    char buf[BUFSIZE];
 +    while ( __AFL_LOOP(10000)){
 +        printf("[+] Looping\n");
 +        memset(buf, 0, BUFSIZE);
 +        size_t read_bytes = read(0, buf, BUFSIZE);
-+        buf[BUFSIZE-2] = '\r';
-+        buf[BUFSIZE-1] = '\n';
-+        buf[BUFSIZE] = '\0';
-+      //      dprintf(fd, "[+] Looping\n");
-+        //printf("[+] Read ->  %s <- from in file \n", buf);
++        buf[BUFSIZE-3] = '\r';
++        buf[BUFSIZE-2] = '\n';
++        buf[BUFSIZE-1] = '\0';
 +
 +        int myfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 +        if (myfd == -1) {
-+	  //  dprintf(fd, "HORROR");
 +            perror("socket");
 +            _exit(1);
 +        }
 +
 +        int sz = (1024 * 1024);
 +        if (setsockopt(myfd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof(sz)) == -1) {
-+	  //	  dprintf(fd, "HORROR");
 +            perror("setsockopt");
 +            exit(1);
 +        }
@@ -149,36 +100,29 @@ Index: server/main.c
 +        saddr.sin_family = AF_INET;
 +        saddr.sin_port = htons(8085);
 +        saddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++
++        // If we can't connect we keep looping untill everything is ready
 +        if (connect(myfd, &saddr, sizeof(saddr)) == -1) {
-+	  //	  dprintf(fd, "HORROR connect %d\n", errno);
 +            perror("connect");
 +	    close(myfd);
-+	    // Wait a bit so server can start
 +	    usleep(100);
 +            continue;
-+            // If we can't connect we keep looping untill everything is ready
 +        }
 +
 +        if (send(myfd, buf, read_bytes, MSG_NOSIGNAL) != read_bytes) {
-+	  /* dprintf(fd, "[+] Buf not sent %s\n", buf); */
-+	  /* dprintf(fd, "HORROR"); */
 +            perror("send() failed 1");
 +            exit(1);
 +        }
-+	//	dprintf(fd, "Sending %s\n", buf);
-+
 +
 +        if (shutdown(myfd, SHUT_WR) == -1) {
 +            perror("shutdown");
 +            exit(1);
 +        }
 +
-+        char b[1024 * 1024];
++        char b[BUFSIZE];
 +        while (recv(myfd, b, sizeof(b), MSG_WAITALL) > 0) ;
-+	//	dprintf(fd, "Received %s\n", b);
 +
 +	close(myfd);
-+        /* dprintf(fd, "[+] Nice run\n"); */
 +	// Calling exit causes segfault - something is being double freed,
 +	// there must be a callback that get called twice
 +    }
@@ -199,38 +143,9 @@ Index: server/main.c
 +
 +int main(int argc, const char *const argv[])
 +{
-+    // Hackish way to get file from input
-+    const char *finput = NULL;
-+    for (int i = 0; i < argc; i++){
-+        if (strcmp(argv[i],"-F")==0){
-+            finput = argv[i+1];
-+            break;
-+        }
-+    }
-+
 +    if (getenv("NO_FUZZ") == NULL) {
-+        FILE *f;
 +        char *buf;
-+        long fsize;
 + 
-+        /* printf("[+] Stdin file %s\n", finput); */
-+        /* f = fopen(finput, "rb"); */
-+        /* if (f != NULL) { */
-+        /*     /\* fseek(f, 0, SEEK_END); *\/ */
-+        /*     /\* fsize = ftell(f); *\/ */
-+        /*     /\* fseek(f, 0, SEEK_SET); *\/ */
-+        /*     /\* buf = malloc(fsize + 2 + 1); // +2 for \r\n +1 for the null byte (not really needed) *\/ */
-+        /*     /\* fread(buf, fsize, 1, f); *\/ */
-+        /*     /\* // The following lines add terminator characters to the fuzzing input *\/ */
-+        /*     /\* // so it never hangs because of not being compliant to the RFC (always end with \r\n) *\/ */
-+        /*     /\* buf[fsize] = '\r';  *\/ */
-+        /*     /\* buf[fsize+1] = '\n'; *\/ */
-+        /*     /\* buf[fsize+2] = '\0'; *\/ */
-+        /*     /\* fclose(f); *\/ */
-+        /* } else { */
-+        /*     printf("[-] Couldn't fopen\n"); */
-+        /*     _exit(1); */
-+        /* } */
 +        unsh();
 +        LAUNCHTHR(buf);
 +        printf("[+] Launched loop\n");
@@ -240,25 +155,7 @@ Index: server/main.c
      char c;
      int showcompile = 0, showdirectives = 0;
      const char *confname = SERVER_CONFIG_FILE;
-@@ -523,6 +730,7 @@
-      * to safely pass on our args from its rewrite_args() handler.
-      */
-     apr_getopt_init(&opt, pcommands, process->argc, process->argv);
-+    printf("BASEARGS: %s\n", AP_SERVER_BASEARGS);
- 
-     while ((rv = apr_getopt(opt, AP_SERVER_BASEARGS, &c, &opt_arg))
-             == APR_SUCCESS) {
-@@ -625,7 +833,8 @@
-                 ap_run_mode = AP_SQ_RM_CONFIG_DUMP;
-             }
-             break;
--
-+        case 'F':
-+            break;
-         case 'h':
-         case '?':
-             usage(process);
-@@ -658,22 +867,10 @@
+@@ -658,22 +801,10 @@
      }
      ap_server_conf = ap_read_config(process, ptemp, confname, &ap_conftree);
      if (!ap_server_conf) {
@@ -281,7 +178,7 @@ Index: server/main.c
      /* sort hooks here to make sure pre_config hooks are sorted properly */
      apr_hook_sort_all();
  
-@@ -702,7 +899,10 @@
+@@ -702,7 +833,10 @@
          }
  
          if (ap_run_mode != AP_SQ_RM_NORMAL) {
@@ -293,7 +190,7 @@ Index: server/main.c
                  ap_show_directives();
                  destroy_and_exit_process(process, 0);
              }
-@@ -717,6 +917,7 @@
+@@ -717,6 +851,7 @@
  
      /* If our config failed, deal with that here. */
      if (rv != OK) {
@@ -301,7 +198,7 @@ Index: server/main.c
          destroy_and_exit_process(process, 1);
      }
  
-@@ -725,6 +926,7 @@
+@@ -725,6 +860,7 @@
          int exit_status;
  
          if (signal_server(&exit_status, pconf) != 0) {
@@ -309,7 +206,7 @@ Index: server/main.c
              destroy_and_exit_process(process, exit_status);
          }
      }
-@@ -819,7 +1021,8 @@
+@@ -819,7 +955,8 @@
          rc = ap_run_mpm(pconf, plog, ap_server_conf);
  
          apr_pool_lock(pconf, 0);
@@ -319,7 +216,7 @@ Index: server/main.c
      } while (rc == OK);
  
      if (rc == DONE) {
-@@ -829,7 +1032,11 @@
+@@ -829,7 +966,11 @@
          ap_log_error(APLOG_MARK, APLOG_EMERG, 0, NULL, APLOGNO(02818)
                       "MPM run failed, exiting");
      }
