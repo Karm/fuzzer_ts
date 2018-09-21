@@ -43,10 +43,9 @@ patch -p0 -i ${PATCH_PATH2}
 
 ./buildconf
 
-CC=${AFL_GCC} ./configure --prefix=${AFL_HTTP_DIR} --with-libxml2
+CC=${CC} CPP=${CPP} ./configure --prefix=${AFL_HTTP_DIR} --with-libxml2
 make
 make install
-#PREFIX="/usr/local/apache_clean_test/" ./compile_dependencies_with_flags.sh
 
 popd
 
