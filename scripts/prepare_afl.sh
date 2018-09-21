@@ -32,6 +32,9 @@ rm -f afl-latest.tgz
 
 pushd afl*
 make
+pushd llvm_mode
+LLVM_CONFIG=llvm-private-config-64 make
+popd
 popd
 
 zip -r afl.zip afl*
