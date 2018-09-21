@@ -30,6 +30,8 @@ tar xzf afl-latest.tgz
 
 rm -f afl-latest.tgz
 
+scl enable llvm-toolset-7 bash
+
 pushd afl*
 make
 pushd llvm_mode
