@@ -6,3 +6,5 @@ Please make sure that following dependencies are met:
 * pcre
 
 Please run the scripts from 'scrips' directory from this path, so paths to binaries work as expected.
+
+The patch: afl_support.diff is an updated version of patch taken from https://gist.github.com/n30m1nd/ec19fc17c6293be303b85a998cd05aa9
