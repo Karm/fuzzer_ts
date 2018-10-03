@@ -25,7 +25,7 @@ gpgcheck = 1
 EOF
 
 # Install dependecies
-yum install -y svn git patch llvm-toolset-7 llvm-private-devel autoconf libtool pcre-devel libxml2-devel pcre-static
+yum install -y svn git patch llvm-toolset-7 llvm-private-devel autoconf libtool pcre-devel libxml2-devel pcre-static screen
 
 # Enable software collection
 . scl_source enable llvm-toolset-7
