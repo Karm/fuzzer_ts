@@ -65,4 +65,4 @@ cp afl-http.zip ${STATIC_PATH}
 # out of TMP_DIR
 popd
 
-rmdir $TMP_DIR
+#rmdir $TMP_DIR
